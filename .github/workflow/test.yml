@@ -1,0 +1,33 @@
+name: Murni Test CI Docker
+
+on: [push, pull_request]
+
+jobs:
+  ci-test:
+    runs-on: ubuntu-latest
+
+    steps:
+    # 1. Ambil kode dari repositori
+    - name: Checkout kode
+      uses: actions/checkout@v4
+
+    # 2. Build Docker Image dari Dockerfile
+    - name: Build Docker Image
+      run: docker build -t aplikasi-tes .
+
+    # 3. Jalankan kontainer di latar belakang dan buka port 8080
+    - name: Jalankan Kontainer
+      run: docker run -d -p 8080:8080 --name uji-kontainer aplikasi-tes
+
+    # 4. Beri jeda 3 detik agar server Node.js siap menerima koneksi
+    - name: Tunggu Aplikasi Siap
+      run: sleep 3
+
+    # 5. Lakukan tes HTTP request (CI akan gagal jika curl mengembalikan error)
+    - name: Tes Respon Aplikasi
+      run: curl --fail http://localhost:8080
+
+    # 6. Hapus kontainer setelah pengujian selesai (sukses maupun gagal)
+    - name: Bersihkan Kontainer
+      if: always()
+      run: docker rm -f uji-kontainer
